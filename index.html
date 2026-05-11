@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Shop</title>
+
+<style>
+body { font-family: Arial; margin: 0; background: #f4f4f4; }
+
+header {
+  display: flex; justify-content: space-between;
+  background: #222; color: white; padding: 15px;
+}
+
+header a { color: white; cursor: pointer; }
+
+.container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+  gap: 20px; padding: 20px;
+}
+
+.product {
+  background: white;
+  padding: 15px;
+  text-align: center;
+  border-radius: 10px;
+  transition: 0.3s;
+}
+
+.product:hover { transform: scale(1.05); }
+
+.product img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+button {
+  padding: 8px;
+  border: none;
+  background: green;
+  color: white;
+  cursor: pointer;
+  margin-top: 5px;
+}
+
+input, select {
+  margin-top: 5px;
+  padding: 5px;
+}
+
+.page { display: none; }
+.active { display: block; }
+
+.cart-item {
+  background: white;
+  padding: 10px;
+  margin: 10px;
+  border-radius: 5px;
+}
+
+.filter {
+  text-align: center;
+  padding: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h2>My Store</h2>
+  <div>
+    <a onclick="showPage('home')">Home</a> |
+    <a onclick="showPage('cart')">Cart (<span id="count">0</span>)</a>
+  </div>
+</header>
+
+<div class="filter">
+  <select onchange="filterProducts(this.value)">
+    <option value="all">All</option>
+    <option value="clothes">Clothes</option>
+    <option value="electronics">Electronics</option>
+    <option value="accessories">Accessories</option>
+  </select>
+</div>
+
+<!-- HOME -->
+<div id="home" class="page active">
+  <div class="container" id="productList"></div>
+</div>
+
+<!-- CART -->
+<div id="cart" class="page">
+  <div id="cartItems"></div>
+  <h2 id="total"></h2>
+</div>
+
+<script>
+let products = [
+  {
+    name:"T-Shirt",
+    price:500,
+    category:"clothes",
+    rating:4,
+    image:"https://images.unsplash.com/photo-1521572163474-6864f9cf17ab"
+  },
+  {
+    name:"Jeans",
+    price:1200,
+    category:"clothes",
+    rating:5,
+    image:"https://images.unsplash.com/photo-1541099649105-f69ad21f3246"
+  },
+  {
+    name:"Smartphone",
+    price:10000,
+    category:"electronics",
+    rating:5,
+    image:"https://images.unsplash.com/photo-1511707171634-5f897ff02aa9"
+  },
+  {
+    name:"Sunglasses",
+    price:800,
+    category:"accessories",
+    rating:3,
+    image:"https://images.unsplash.com/photo-1511499767150-a48a237f0083"
+  }
+];
+
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+function showPage(page) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.getElementById(page).classList.add("active");
+  displayCart();
+}
+
+function renderProducts(list) {
+  let container = document.getElementById("productList");
+  container.innerHTML = "";
+
+  list.forEach((p, i) => {
+    let stars = "⭐".repeat(p.rating);
+
+    let div = document.createElement("div");
+    div.className = "product";
+    div.innerHTML = `
+      <img src="${p.image}">
+      <h3>${p.name}</h3>
+      <p>${stars}</p>
+      <p>₹${p.price}</p>
+      <input type="number" min="1" value="1" id="qty${i}">
+      <button onclick="addToCart('${p.name}',${p.price},'qty${i}')">Add</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function filterProducts(category) {
+  if (category === "all") renderProducts(products);
+  else renderProducts(products.filter(p => p.category === category));
+}
+
+function addToCart(name, price, qtyId) {
+  let qty = parseInt(document.getElementById(qtyId).value);
+  let existing = cart.find(item => item.name === name);
+
+  if (existing) existing.qty += qty;
+  else cart.push({name, price, qty});
+
+  localStorage.setItem("cart", JSON.stringify(cart));
+  updateCount();
+  alert(name + " added!");
+}
+
+function updateCount() {
+  let totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+  document.getElementById("count").innerText = totalItems;
+}
+
+function displayCart() {
+  let container = document.getElementById("cartItems");
+  let total = 0;
+  container.innerHTML = "";
+
+  cart.forEach((item, index) => {
+    total += item.price * item.qty;
+
+    let div = document.createElement("div");
+    div.className = "cart-item";
+    div.innerHTML = `
+      ${item.name} - ₹${item.price} × ${item.qty}
+      <br>
+      <button onclick="changeQty(${index},1)">+</button>
+      <button onclick="changeQty(${index},-1)">-</button>
+      <button onclick="removeItem(${index})">Remove</button>
+    `;
+    container.appendChild(div);
+  });
+
+  document.getElementById("total").innerText = "Total: ₹" + total;
+}
+
+function changeQty(index, delta) {
+  cart[index].qty += delta;
+  if (cart[index].qty <= 0) cart.splice(index,1);
+
+  localStorage.setItem("cart", JSON.stringify(cart));
+  displayCart();
+  updateCount();
+}
+
+function removeItem(index) {
+  cart.splice(index,1);
+  localStorage.setItem("cart", JSON.stringify(cart));
+  displayCart();
+  updateCount();
+}
+
+renderProducts(products);
+updateCount();
+displayCart();
+</script>
+
+</body>
+</html>
